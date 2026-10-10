@@ -1,6 +1,8 @@
 package com.example.airpodspopup;
 
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,6 +11,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
+    private static final int PERMISSION_REQUEST = 100;
+    private static final int APPLE_ID = 0x004C;
+    private Button btnScan, btnStop;
+    private TextView txtStatus, txtResults, txtDeviceCount;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
