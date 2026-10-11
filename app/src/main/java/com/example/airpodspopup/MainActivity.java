@@ -9,6 +9,7 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean scanning = false;
     private final Set<String> detectDevices = new HashSet<>();
     private final StringBuilder packetLog = new StringBuilder();
+    private long lastUiUpdate=0;
 
     private final ScanCallback scanCallback = new ScanCallback() {
         @SuppressLint("SetTextI18n")
@@ -59,6 +61,11 @@ public class MainActivity extends AppCompatActivity {
                 packetLog.setLength(12000);
             }
             txtResults.setText(packetLog.toString());
+            long currentTime = android.os.SystemClock.elapsedRealtime();
+            if (currentTime-lastUiUpdate>=500){
+                lastUiUpdate=currentTime;
+                txtResults.setText(packetLog.toString());
+            }
         }
 
         @SuppressLint("SetTextI18n")
@@ -93,6 +100,20 @@ public class MainActivity extends AppCompatActivity {
         bluetoothAdapter=manager.getAdapter();
         btnScan.setOnClickListener(v-> checkPermissionsAndScan());
         btnStop.setOnClickListener(v-> stopScanning());
+
+        // Service Calling
+        if (Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},200);
+        }
+        if (Build.VERSION.SDK_INT>=31 && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT},201);
+        } else {
+            Intent serviceIntent = new Intent(this, AirPodsService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                android.util.Log.d("AirPodsService", "STARTING SERVICE FROM ACTIVITY");
+                startForegroundService(serviceIntent);
+            }
+        }
     }
 
     private void checkPermissionsAndScan(){
