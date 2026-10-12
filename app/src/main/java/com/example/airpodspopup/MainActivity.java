@@ -109,10 +109,8 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT},201);
         } else {
             Intent serviceIntent = new Intent(this, AirPodsService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                android.util.Log.d("AirPodsService", "STARTING SERVICE FROM ACTIVITY");
-                startForegroundService(serviceIntent);
-            }
+//            android.util.Log.d("AirPodsService", "STARTING SERVICE FROM ACTIVITY");
+            startForegroundService(serviceIntent);
         }
     }
 
