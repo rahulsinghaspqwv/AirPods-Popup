@@ -1,5 +1,7 @@
 package com.example.airpodspopup;
 
+import static android.content.ContentValues.TAG;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
@@ -13,6 +15,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -111,6 +115,12 @@ public class MainActivity extends AppCompatActivity {
             Intent serviceIntent = new Intent(this, AirPodsService.class);
 //            android.util.Log.d("AirPodsService", "STARTING SERVICE FROM ACTIVITY");
             startForegroundService(serviceIntent);
+        }
+
+        // AirPodsPopupService Calling
+        if (!android.provider.Settings.canDrawOverlays(this)){
+            Intent intent=new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,android.net.Uri.parse("package:"+getPackageName()));
+            startActivity(intent);
         }
     }
 

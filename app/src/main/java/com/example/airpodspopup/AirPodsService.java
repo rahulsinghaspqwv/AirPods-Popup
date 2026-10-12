@@ -1,5 +1,7 @@
 package com.example.airpodspopup;
 
+import static android.content.ContentValues.TAG;
+
 import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -28,6 +30,7 @@ public class AirPodsService extends Service {
     private final BroadcastReceiver bluetoothReceiver=new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d("AirPodsService", "Bluetooth event: " + intent.getAction());
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
                 handleDeviceConnected(intent);
@@ -46,6 +49,7 @@ public class AirPodsService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.e("AirPodsService", "SERVICE STARTED SUCCESSFULLY");
         startForeground(NOTIFICATION_ID, createNotification());
         return START_STICKY;
     }
@@ -72,10 +76,14 @@ public class AirPodsService extends Service {
             return;
         }
         String deviceName=device.getName();
+
+        Log.d("AirPodsService", "Detected device: " + deviceName);
+
         if (deviceName==null)return;
         String lowerName=deviceName.toLowerCase(Locale.ROOT);
         if (lowerName.contains("airpods")){
             Log.d(TAG, "AirPods Connected: "+deviceName);
+            showAirPodsPopup(deviceName);
             Intent popupIntent=new Intent("com.example.airpodspopup.DEVICE_CONNECTED");
             popupIntent.setPackage(getPackageName());
             popupIntent.putExtra("device_name", deviceName);
@@ -91,6 +99,16 @@ public class AirPodsService extends Service {
 
     private Notification createNotification(){
         return new Notification.Builder(this, CHANNEL_ID).setContentTitle("AirPods Pro").setContentText("Monitoring Bluetooth connections").setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).setOngoing(true).build();
+    }
+
+    private void showAirPodsPopup(String deviceName){
+        if (!android.provider.Settings.canDrawOverlays(this)){
+            Log.e(TAG, "Overlay permission not granted");
+            return;
+        }
+        Intent intent=new Intent(this, AirPodsPopupService.class);
+        intent.putExtra("device_name", deviceName);
+        startService(intent);
     }
 
     @Override
