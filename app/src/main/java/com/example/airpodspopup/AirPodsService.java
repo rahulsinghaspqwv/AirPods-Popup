@@ -39,12 +39,78 @@ public class AirPodsService extends Service {
             }
         }
     };
+    private static final String BATTERY_ACTION =
+            "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED";
+    private static final String BATTERY_EXTRA =
+            "android.bluetooth.device.extra.BATTERY_LEVEL";
+
+    private boolean batteryReceiverRegistered = false;
+
+    private final BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+             if (intent == null) return;
+             if (!BATTERY_ACTION.equals(intent.getAction())) {
+                 return;
+             }
+             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                 if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!= PackageManager.PERMISSION_GRANTED) {
+                        Log.e("AirPodsBattery", "BLUETOOTH_CONNECT permission missing");
+                            return;
+                 }
+             }
+             BluetoothDevice device;
+             if (Build.VERSION.SDK_INT >= 33) {
+                 device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice.class);
+             } else {
+                 device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+             }
+             if (device == null) {
+                 Log.d("AirPodsBattery", "Device is null");
+                 return;
+             }
+             String deviceName = device.getName();
+             if (deviceName == null) {
+                 Log.d("AirPodsBattery", "Device name unavailable");
+                 return;
+             }
+             Log.d("AirPodsBattery", "Battery event from: " + deviceName);
+             if (!deviceName.equalsIgnoreCase("Rahul’s AirPods Pro")) {
+                 return;
+             }
+             int batteryLevel = intent.getIntExtra(BATTERY_EXTRA, -1);
+             if (batteryLevel < 0 || batteryLevel > 100) {
+                 Log.d("AirPodsBattery", "Valid battery level not available");
+                 return;
+             }
+             getSharedPreferences("airpods", MODE_PRIVATE).edit().putInt("battery", batteryLevel).putString("battery_device", deviceName).putLong("battery_updated_at", System.currentTimeMillis()).apply();
+             Log.d("AirPodsBattery", "Rahul's AirPods battery: " + batteryLevel + "%");
+        }
+    };
+
+    private void registerBatteryReceiver() {
+        if (batteryReceiverRegistered) return;
+        IntentFilter filter = new IntentFilter(BATTERY_ACTION);
+        registerReceiver(batteryReceiver, filter);
+        batteryReceiverRegistered = true;
+        Log.d("AirPodsBattery", "Battery receiver registered");
+    }
+
+    private void unregisterBatteryReceiver() {
+        if (batteryReceiverRegistered) {
+            unregisterReceiver(batteryReceiver);
+            batteryReceiverRegistered = false;
+            Log.d("AirPodsBattery", "Battery receiver unregistered");
+        }
+    }
+
 
     @Override
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
         registerBluetoothReceiver();
+        registerBatteryReceiver();
     }
 
     @Override
@@ -117,6 +183,7 @@ public class AirPodsService extends Service {
             unregisterReceiver(bluetoothReceiver);
             receiverRegistered=false;
         }
+        unregisterBatteryReceiver();
         super.onDestroy();
     }
 
